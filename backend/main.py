@@ -1354,4 +1354,6 @@ async def get_recommendations(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Порт 7000 для MindGarden API (8000 занят другими сервисами)
+    port = int(os.getenv("PORT", 7000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

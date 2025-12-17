@@ -1,6 +1,7 @@
 """
-ZenFlow API v2.1 - Premium Meditation & Yoga Backend
-FastAPI + Vercel Postgres + Stripe + ЮКасса
+MindGarden API v3.0 - Mental Wellness Backend
+FastAPI + Postgres + Stripe + ЮКасса + OpenAI
+Советы по питанию, сну, активности (НЕ психология/терапия)
 """
 
 from fastapi import FastAPI, HTTPException, Depends, status, Query, Request, BackgroundTasks
@@ -14,6 +15,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
 import json
+import httpx
 from dotenv import load_dotenv
 
 # Database
@@ -28,7 +30,7 @@ load_dotenv()
 
 # ==================== DATABASE CONFIG ====================
 
-DATABASE_URL = os.getenv("POSTGRES_URL", os.getenv("DATABASE_URL", "sqlite:///./zenflow.db"))
+DATABASE_URL = os.getenv("POSTGRES_URL", os.getenv("DATABASE_URL", "sqlite:///./mindgarden.db"))
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -62,6 +64,7 @@ class UserDB(Base):
     progress = relationship("ProgressDB", back_populates="user", uselist=False)
     sessions = relationship("SessionDB", back_populates="user")
     moods = relationship("MoodDB", back_populates="user")
+    chat_messages = relationship("ChatMessageDB", back_populates="user")
 
 
 class ContentDB(Base):
@@ -127,6 +130,18 @@ class MoodDB(Base):
     recorded_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("UserDB", back_populates="moods")
+
+
+class ChatMessageDB(Base):
+    __tablename__ = "chat_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), nullable=False)  # user or assistant
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("UserDB", back_populates="chat_messages")
 
 
 class AchievementDB(Base):
@@ -232,13 +247,20 @@ class PaymentCreate(BaseModel):
     provider: str = "yukassa"  # yukassa, stripe
     return_url: Optional[str] = None
 
+class ChatMessage(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
+    message_id: int
+
 
 # ==================== APP CONFIG ====================
 
 app = FastAPI(
-    title="ZenFlow API",
-    description="Premium Meditation & Yoga API with Stripe & ЮКасса payments",
-    version="2.1.0",
+    title="MindGarden API",
+    description="Mental Wellness API - Питание, Сон, Активность (не терапия)",
+    version="3.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -249,7 +271,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://localhost:8080",
-        "https://zenflow.vercel.app",
+        "https://mindgarden.vercel.app",
         "https://*.vercel.app",
     ],
     allow_credentials=True,
@@ -260,7 +282,7 @@ app.add_middleware(
 
 # ==================== SECURITY ====================
 
-SECRET_KEY = os.getenv("JWT_SECRET", "zenflow-super-secret-key-change-in-production-2024")
+SECRET_KEY = os.getenv("JWT_SECRET", "mindgarden-wellness-secret-key-2024")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 
@@ -340,16 +362,161 @@ async def get_optional_user(
     return None
 
 
+# ==================== AI WELLNESS HELPER ====================
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+WELLNESS_SYSTEM_PROMPT = """Ты - дружелюбный помощник по здоровому образу жизни в приложении MindGarden.
+
+ТВОЯ СПЕЦИАЛИЗАЦИЯ (только эти темы):
+- Питание и правильное питание
+- Сон и режим сна
+- Физическая активность и спорт
+- Водный баланс и гидратация
+- Энергия и восстановление
+- Утренние и вечерние ритуалы
+- Базовое расслабление тела (дыхание, растяжка)
+
+ВАЖНО - НЕ давай советы по:
+- Психологии, ментальному здоровью, терапии
+- Депрессии, тревожности, психическим расстройствам
+- Отношениям и эмоциональным проблемам
+- Лекарствам и медицинским препаратам
+- Диагностике заболеваний
+
+Если спрашивают про психологию/ментальное здоровье, мягко перенаправь:
+"Я могу помочь с советами по питанию, сну, физической активности и восстановлению. Для вопросов о ментальном здоровье рекомендую обратиться к специалисту."
+
+СТИЛЬ:
+- Дружелюбный и поддерживающий
+- Практичные, конкретные советы
+- Используй эмодзи умеренно
+- Отвечай на русском языке
+- Давай пошаговые инструкции где уместно
+- Краткие ответы (2-4 абзаца)"""
+
+
+async def get_ai_response(user_message: str, conversation_history: List[dict] = None) -> str:
+    """Get AI response from OpenAI"""
+    
+    if not OPENAI_API_KEY:
+        return get_fallback_response(user_message)
+    
+    messages = [{"role": "system", "content": WELLNESS_SYSTEM_PROMPT}]
+    
+    if conversation_history:
+        # Add last 6 messages for context
+        for msg in conversation_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+    
+    messages.append({"role": "user", "content": user_message})
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 500
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+            else:
+                return get_fallback_response(user_message)
+                
+    except Exception as e:
+        print(f"OpenAI error: {e}")
+        return get_fallback_response(user_message)
+
+
+def get_fallback_response(message: str) -> str:
+    """Fallback responses when OpenAI is not available"""
+    msg = message.lower()
+    
+    if any(w in msg for w in ["сон", "спать", "бессонниц", "засып"]):
+        return """😴 Советы для лучшего сна:
+
+1. **Режим**: Ложитесь и вставайте в одно время
+2. **Среда**: Тёмная, прохладная комната (18-20°C)
+3. **Ритуал**: За 1 час до сна отложите телефон
+4. **Питание**: Лёгкий ужин за 2-3 часа до сна
+
+💡 Попробуйте дыхание 4-7-8: вдох 4 сек, пауза 7 сек, выдох 8 сек."""
+    
+    elif any(w in msg for w in ["еда", "питан", "завтрак", "обед", "ужин", "есть"]):
+        return """🥗 Основы здорового питания:
+
+1. **Баланс**: Белки + жиры + углеводы в каждом приёме
+2. **Порции**: 1/2 тарелки овощи, 1/4 белок, 1/4 углеводы
+3. **Регулярность**: 3 основных приёма + 2 перекуса
+4. **Вода**: 2-2.5 литра в день
+
+🍳 Завтрак — самый важный приём! Включайте белок для энергии."""
+    
+    elif any(w in msg for w in ["спорт", "трениров", "бег", "упражнен", "фитнес"]):
+        return """💪 Рекомендации по активности:
+
+1. **Минимум**: 150 мин умеренной нагрузки в неделю
+2. **Начинающим**: Ходьба 30 мин в день
+3. **Восстановление**: Отдых между тренировками
+4. **Разнообразие**: Кардио + силовые + растяжка
+
+🚶 Начните с малого — даже 10 мин прогулки лучше, чем ничего!"""
+    
+    elif any(w in msg for w in ["устал", "энерги", "сил"]):
+        return """⚡ Как восполнить энергию:
+
+1. **Вода**: Часто усталость = обезвоживание
+2. **Сон**: Проверьте качество и количество сна
+3. **Питание**: Регулярные приёмы пищи с белком
+4. **Движение**: 10-минутная прогулка бодрит
+
+💧 Начните со стакана воды прямо сейчас!"""
+    
+    elif any(w in msg for w in ["вод", "пить"]):
+        return """💧 Гидратация — основа здоровья:
+
+📊 **Норма**: 30-35 мл на кг веса (при 70 кг = 2.1-2.5 л)
+
+⏰ **Как распределить**:
+- Стакан после пробуждения
+- По стакану перед едой
+- Бутылка воды всегда под рукой
+
+✅ Светлая моча = хорошая гидратация!"""
+    
+    else:
+        return """Привет! 👋 Я помощник по здоровому образу жизни.
+
+Могу подсказать про:
+🍎 **Питание** — что есть, когда, сколько
+😴 **Сон** — как улучшить качество сна
+💪 **Активность** — с чего начать тренировки
+💧 **Вода** — сколько пить
+⚡ **Энергия** — как повысить бодрость
+
+Просто спросите о любой из этих тем!"""
+
+
 # ==================== ROUTES ====================
 
 @app.get("/")
 async def root():
     return {
-        "name": "ZenFlow API",
-        "version": "2.1.0",
-        "status": "🚀 Running",
+        "name": "MindGarden API",
+        "version": "3.0.0",
+        "status": "🌿 Running",
         "docs": "/docs",
-        "features": ["Auth", "Content", "Progress", "Payments", "AI Recommendations"]
+        "features": ["Auth", "Content", "Progress", "Payments", "AI Wellness Chat", "Mood Tracker"]
     }
 
 
@@ -370,7 +537,7 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         name=user.name,
         hashed_password=get_password_hash(user.password),
-        avatar_url=f"https://ui-avatars.com/api/?name={user.name}&background=a855f7&color=fff&size=200"
+        avatar_url=f"https://ui-avatars.com/api/?name={user.name}&background=22c55e&color=fff&size=200"
     )
     db.add(new_user)
     db.commit()
@@ -414,6 +581,97 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 async def get_me(current_user: UserDB = Depends(get_current_user)):
     """Текущий пользователь"""
     return current_user
+
+
+# ==================== AI CHAT ====================
+
+@app.post("/api/chat", response_model=ChatResponse, tags=["AI Chat"])
+async def send_chat_message(
+    chat: ChatMessage,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Отправить сообщение AI-помощнику по wellness"""
+    
+    # Check premium for unlimited messages
+    if not current_user.is_premium:
+        # Free users: 10 messages per day
+        today = datetime.utcnow().date()
+        today_messages = db.query(ChatMessageDB).filter(
+            ChatMessageDB.user_id == current_user.id,
+            ChatMessageDB.role == "user",
+            ChatMessageDB.created_at >= datetime(today.year, today.month, today.day)
+        ).count()
+        
+        if today_messages >= 10:
+            raise HTTPException(
+                status_code=429,
+                detail="Лимит бесплатных сообщений исчерпан. Оформите подписку для безлимитного доступа."
+            )
+    
+    # Save user message
+    user_msg = ChatMessageDB(
+        user_id=current_user.id,
+        role="user",
+        content=chat.message
+    )
+    db.add(user_msg)
+    db.commit()
+    
+    # Get conversation history
+    history = db.query(ChatMessageDB).filter(
+        ChatMessageDB.user_id == current_user.id
+    ).order_by(ChatMessageDB.created_at.desc()).limit(10).all()
+    
+    history_list = [{"role": m.role, "content": m.content} for m in reversed(history)]
+    
+    # Get AI response
+    ai_response = await get_ai_response(chat.message, history_list)
+    
+    # Save assistant message
+    assistant_msg = ChatMessageDB(
+        user_id=current_user.id,
+        role="assistant",
+        content=ai_response
+    )
+    db.add(assistant_msg)
+    db.commit()
+    db.refresh(assistant_msg)
+    
+    return ChatResponse(response=ai_response, message_id=assistant_msg.id)
+
+
+@app.get("/api/chat/history", tags=["AI Chat"])
+async def get_chat_history(
+    limit: int = Query(50, le=100),
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """История чата"""
+    messages = db.query(ChatMessageDB).filter(
+        ChatMessageDB.user_id == current_user.id
+    ).order_by(ChatMessageDB.created_at.desc()).limit(limit).all()
+    
+    return [
+        {
+            "id": m.id,
+            "role": m.role,
+            "content": m.content,
+            "created_at": m.created_at.isoformat()
+        }
+        for m in reversed(messages)
+    ]
+
+
+@app.delete("/api/chat/history", tags=["AI Chat"])
+async def clear_chat_history(
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Очистить историю чата"""
+    db.query(ChatMessageDB).filter(ChatMessageDB.user_id == current_user.id).delete()
+    db.commit()
+    return {"success": True, "message": "История чата очищена"}
 
 
 # ==================== CONTENT ====================
@@ -707,6 +965,13 @@ async def create_payment(
 ):
     """Создать платёж (Stripe или ЮКасса)"""
     
+    # Pricing
+    PRICES = {
+        "monthly": {"rub": 449, "usd": 4.99},
+        "yearly": {"rub": 2990, "usd": 29.99},
+        "lifetime": {"rub": 4990, "usd": 49.99},
+    }
+    
     if payment.provider == "yukassa":
         result = await YuKassaPayment.create_subscription(
             user_id=current_user.id,
@@ -719,7 +984,7 @@ async def create_payment(
             user_id=current_user.id,
             provider="yukassa",
             payment_id=result["payment_id"],
-            amount=490 if payment.plan == "premium" else 4990,
+            amount=PRICES.get(payment.plan, {}).get("rub", 449),
             currency="RUB",
             status="pending",
             plan=payment.plan
@@ -817,19 +1082,19 @@ async def get_recommendations(
     
     # Time-based category selection
     if 5 <= hour < 10:
-        preferred_categories = ["Утро", "Утренняя йога", "Энергия"]
+        preferred_categories = ["Утро", "Утренняя практика", "Энергия", "Бодрость"]
         content_type = "meditation"
     elif 10 <= hour < 14:
         preferred_categories = ["Концентрация", "Фокус", "Продуктивность"]
         content_type = "meditation"
     elif 14 <= hour < 18:
-        preferred_categories = ["Хатха йога", "Силовая йога", "Виньяса"]
-        content_type = "yoga"
+        preferred_categories = ["Дыхание", "Энергия", "Активация"]
+        content_type = "breathing"
     elif 18 <= hour < 21:
-        preferred_categories = ["Вечерняя йога", "Релаксация", "Инь йога"]
-        content_type = "yoga"
+        preferred_categories = ["Вечер", "Релаксация", "Расслабление"]
+        content_type = "meditation"
     else:
-        preferred_categories = ["Медитация сна", "Природа", "Амбиент"]
+        preferred_categories = ["Сон", "Ночь", "Глубокий сон"]
         content_type = "sleep"
     
     # Get content

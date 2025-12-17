@@ -1,22 +1,38 @@
-# Создайте файл .env и скопируйте эти значения
+# MindGarden Backend Environment Variables
+# Copy this file to .env and fill in the values
 
-# Database (Vercel Postgres)
-POSTGRES_URL=postgres://user:password@host:5432/database
+# ==================== DATABASE ====================
+# For local development (SQLite)
+DATABASE_URL=sqlite:///./mindgarden.db
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this
+# For production (PostgreSQL - Vercel Postgres)
+# POSTGRES_URL=postgresql://user:password@host:5432/database
 
-# ЮКасса
-YUKASSA_SHOP_ID=your_shop_id
-YUKASSA_SECRET_KEY=your_secret_key
+# ==================== SECURITY ====================
+JWT_SECRET=your-super-secret-jwt-key-change-in-production-2024
 
-# Stripe (optional)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PRICE_PREMIUM=price_...
-STRIPE_PRICE_LIFETIME=price_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+# ==================== OPENAI ====================
+# Required for AI wellness chat
+OPENAI_API_KEY=sk-your-openai-api-key
 
-# Frontend URL
-FRONTEND_URL=https://zenflow.vercel.app
+# ==================== PAYMENTS ====================
+# YuKassa (Russia)
+YUKASSA_SHOP_ID=your-shop-id
+YUKASSA_SECRET_KEY=your-secret-key
 
+# Stripe (International)
+STRIPE_SECRET_KEY=sk_test_your-stripe-key
+STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
+STRIPE_PRICE_MONTHLY=price_monthly_id
+STRIPE_PRICE_YEARLY=price_yearly_id
 
+# ==================== APP CONFIG ====================
+# Frontend URL for CORS and redirects
+FRONTEND_URL=http://localhost:3000
+
+# ==================== OPTIONAL ====================
+# Sentry for error tracking
+# SENTRY_DSN=https://xxx@sentry.io/xxx
+
+# Analytics
+# AMPLITUDE_API_KEY=your-amplitude-key

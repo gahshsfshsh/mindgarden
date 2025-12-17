@@ -118,10 +118,11 @@ coverage/
 secrets/
 credentials/
 
-# ===== Design Files =====
-design-vibe-4/design-vibe-4/node_modules/
-design-vibe-5/node_modules/
+# ===== Design Files (templates) =====
+design-vibe-4/
+design-vibe-5/
 __MACOSX/
+.playwright-mcp/
 
 # ===== Archives =====
 *.zip

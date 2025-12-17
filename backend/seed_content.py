@@ -1,152 +1,415 @@
 """
-Скрипт для наполнения базы данных контентом
+Seed content for MindGarden app
+Run: python seed_content.py
 """
 
-import os
-from sqlalchemy import create_engine
+from main import engine, ContentDB, Base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
-load_dotenv()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-DATABASE_URL = os.getenv("POSTGRES_URL", os.getenv("DATABASE_URL", "sqlite:///./zenflow.db"))
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-if "sqlite" in DATABASE_URL:
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
-SessionLocal = sessionmaker(bind=engine)
-
-# Import after engine setup
-from main import ContentDB, Base
-
+# Create all tables
 Base.metadata.create_all(bind=engine)
 
-
-CONTENT_DATA = [
-    # ============ MEDITATION ============
-    # Утро
-    {"type": "meditation", "title": "Утреннее пробуждение", "description": "Мягкое пробуждение и настройка на новый день с благодарностью", "duration": "10 мин", "category": "Утро", "level": "Начинающий", "is_premium": False, "instructor": "Анна Светлова", "thumbnail_url": "/images/morning-awakening.jpg", "audio_url": "/audio/morning-awakening.mp3"},
-    {"type": "meditation", "title": "Энергия на весь день", "description": "Зарядка энергией через визуализацию и дыхание", "duration": "15 мин", "category": "Утро", "level": "Любой", "is_premium": False, "instructor": "Дмитрий Волков", "thumbnail_url": "/images/energy-boost.jpg", "audio_url": "/audio/energy-boost.mp3"},
-    {"type": "meditation", "title": "Осознанное утро", "description": "Практика осознанности для ясного начала дня", "duration": "20 мин", "category": "Утро", "level": "Средний", "is_premium": True, "instructor": "Мария Покровская", "thumbnail_url": "/images/mindful-morning.jpg", "audio_url": "/audio/mindful-morning.mp3"},
+CONTENT = [
+    # ==================== МЕДИТАЦИИ ====================
+    {
+        "type": "meditation",
+        "title": "Утреннее пробуждение",
+        "description": "Мягкая медитация для начала нового дня с энергией и ясностью",
+        "duration": "10 мин",
+        "category": "Утро",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/morning-awakening.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400",
+        "instructor": "Анна Светлова",
+        "benefits": "Энергия, ясность ума, позитивный настрой",
+        "tags": "утро,энергия,начало дня"
+    },
+    {
+        "type": "meditation",
+        "title": "Глубокое расслабление",
+        "description": "Погрузитесь в состояние полного покоя и восстановления",
+        "duration": "15 мин",
+        "category": "Релаксация",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/deep-relaxation.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=400",
+        "instructor": "Михаил Тихонов",
+        "benefits": "Расслабление, снятие напряжения, восстановление",
+        "tags": "расслабление,покой,отдых"
+    },
+    {
+        "type": "meditation",
+        "title": "Фокус и концентрация",
+        "description": "Медитация для повышения продуктивности и ясности мышления",
+        "duration": "12 мин",
+        "category": "Концентрация",
+        "level": "Средний",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/focus-concentration.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400",
+        "instructor": "Анна Светлова",
+        "benefits": "Фокус, продуктивность, ясность",
+        "tags": "фокус,работа,продуктивность"
+    },
+    {
+        "type": "meditation",
+        "title": "Благодарность",
+        "description": "Практика благодарности для улучшения настроения и взгляда на жизнь",
+        "duration": "8 мин",
+        "category": "Позитив",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/gratitude.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1506784365847-bbad939e9335?w=400",
+        "instructor": "Елена Радость",
+        "benefits": "Благодарность, позитив, счастье",
+        "tags": "благодарность,позитив,радость"
+    },
+    {
+        "type": "meditation",
+        "title": "Вечернее отпускание",
+        "description": "Отпустите напряжение дня и подготовьтесь к отдыху",
+        "duration": "15 мин",
+        "category": "Вечер",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/evening-release.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=400",
+        "instructor": "Михаил Тихонов",
+        "benefits": "Отпускание, спокойствие, подготовка ко сну",
+        "tags": "вечер,отпускание,покой"
+    },
+    {
+        "type": "meditation",
+        "title": "Осознанность в моменте",
+        "description": "Научитесь полностью присутствовать в настоящем",
+        "duration": "10 мин",
+        "category": "Осознанность",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/mindfulness.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1545389336-cf090694435e?w=400",
+        "instructor": "Анна Светлова",
+        "benefits": "Осознанность, присутствие, спокойствие",
+        "tags": "осознанность,момент,присутствие"
+    },
+    {
+        "type": "meditation",
+        "title": "Сканирование тела",
+        "description": "Пройдитесь вниманием по всему телу для глубокого расслабления",
+        "duration": "20 мин",
+        "category": "Релаксация",
+        "level": "Средний",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/body-scan.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400",
+        "instructor": "Михаил Тихонов",
+        "benefits": "Расслабление тела, снятие напряжения",
+        "tags": "тело,расслабление,сканирование"
+    },
+    {
+        "type": "meditation",
+        "title": "Визуализация успеха",
+        "description": "Представьте свой идеальный день и цели",
+        "duration": "12 мин",
+        "category": "Визуализация",
+        "level": "Средний",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/success-visualization.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1533073526757-2c8ca1df9f1c?w=400",
+        "instructor": "Елена Радость",
+        "benefits": "Мотивация, визуализация, цели",
+        "tags": "успех,визуализация,цели"
+    },
     
-    # Концентрация
-    {"type": "meditation", "title": "Глубокая концентрация", "description": "Развитие способности фокусироваться на одной задаче", "duration": "15 мин", "category": "Концентрация", "level": "Средний", "is_premium": False, "instructor": "Алексей Миронов", "thumbnail_url": "/images/deep-focus.jpg", "audio_url": "/audio/deep-focus.mp3"},
-    {"type": "meditation", "title": "Продуктивность без стресса", "description": "Работа в потоке без напряжения", "duration": "12 мин", "category": "Фокус", "level": "Любой", "is_premium": False, "instructor": "Елена Крылова", "thumbnail_url": "/images/productive-calm.jpg", "audio_url": "/audio/productive-calm.mp3"},
-    {"type": "meditation", "title": "Ясность ума", "description": "Очищение мыслей и улучшение когнитивных функций", "duration": "20 мин", "category": "Фокус", "level": "Продвинутый", "is_premium": True, "instructor": "Андрей Соколов", "thumbnail_url": "/images/mental-clarity.jpg", "audio_url": "/audio/mental-clarity.mp3"},
-    {"type": "meditation", "title": "Перезагрузка", "description": "Быстрое восстановление внимания и сил", "duration": "5 мин", "category": "Продуктивность", "level": "Начинающий", "is_premium": False, "instructor": "Ольга Белова", "thumbnail_url": "/images/reboot.jpg", "audio_url": "/audio/reboot.mp3"},
+    # ==================== ДЫХАТЕЛЬНЫЕ ПРАКТИКИ ====================
+    {
+        "type": "breathing",
+        "title": "Дыхание 4-7-8",
+        "description": "Классическая техника для расслабления и засыпания",
+        "duration": "5 мин",
+        "category": "Расслабление",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/breathing-478.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400",
+        "instructor": "Дмитрий Ветров",
+        "benefits": "Расслабление, улучшение сна",
+        "tags": "4-7-8,сон,расслабление"
+    },
+    {
+        "type": "breathing",
+        "title": "Box Breathing",
+        "description": "Квадратное дыхание для баланса и концентрации",
+        "duration": "7 мин",
+        "category": "Фокус",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/box-breathing.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400",
+        "instructor": "Дмитрий Ветров",
+        "benefits": "Баланс, фокус, спокойствие",
+        "tags": "квадратное,баланс,фокус"
+    },
+    {
+        "type": "breathing",
+        "title": "Энергизирующее дыхание",
+        "description": "Быстро поднимите энергию и бодрость",
+        "duration": "5 мин",
+        "category": "Энергия",
+        "level": "Средний",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/energy-breathing.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400",
+        "instructor": "Дмитрий Ветров",
+        "benefits": "Энергия, бодрость, пробуждение",
+        "tags": "энергия,бодрость,утро"
+    },
+    {
+        "type": "breathing",
+        "title": "Дыхание для сна",
+        "description": "Мягкая техника для глубокого засыпания",
+        "duration": "10 мин",
+        "category": "Сон",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/sleep-breathing.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1511295742362-92c96b1cf484?w=400",
+        "instructor": "Анна Светлова",
+        "benefits": "Сон, расслабление, покой",
+        "tags": "сон,ночь,засыпание"
+    },
+    {
+        "type": "breathing",
+        "title": "Антистресс дыхание",
+        "description": "Быстро снизьте напряжение в любой ситуации",
+        "duration": "3 мин",
+        "category": "Экспресс",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/antistress-breathing.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1474418397713-7ede21d49118?w=400",
+        "instructor": "Дмитрий Ветров",
+        "benefits": "Снятие напряжения, быстрое успокоение",
+        "tags": "экспресс,напряжение,быстро"
+    },
+    {
+        "type": "breathing",
+        "title": "Дыхание Вима Хофа",
+        "description": "Интенсивная практика для энергии и устойчивости",
+        "duration": "15 мин",
+        "category": "Продвинутый",
+        "level": "Продвинутый",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/wim-hof.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400",
+        "instructor": "Дмитрий Ветров",
+        "benefits": "Энергия, устойчивость, закаливание",
+        "tags": "вим хоф,энергия,продвинутый"
+    },
     
-    # Снятие стресса
-    {"type": "meditation", "title": "Антистресс", "description": "Глубокая релаксация и снятие напряжения", "duration": "15 мин", "category": "Антистресс", "level": "Начинающий", "is_premium": False, "instructor": "Анна Светлова", "thumbnail_url": "/images/anti-stress.jpg", "audio_url": "/audio/anti-stress.mp3"},
-    {"type": "meditation", "title": "Освобождение от тревоги", "description": "Техники работы с тревожными мыслями", "duration": "20 мин", "category": "Антистресс", "level": "Средний", "is_premium": True, "instructor": "Мария Покровская", "thumbnail_url": "/images/anxiety-release.jpg", "audio_url": "/audio/anxiety-release.mp3"},
-    {"type": "meditation", "title": "Спокойствие здесь и сейчас", "description": "Возвращение к настоящему моменту", "duration": "10 мин", "category": "Осознанность", "level": "Любой", "is_premium": False, "instructor": "Дмитрий Волков", "thumbnail_url": "/images/present-moment.jpg", "audio_url": "/audio/present-moment.mp3"},
+    # ==================== СОН ====================
+    {
+        "type": "sleep",
+        "title": "Ночной лес",
+        "description": "Погрузитесь в атмосферу тихого ночного леса",
+        "duration": "45 мин",
+        "category": "Природа",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/night-forest.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1448375240586-882707db888b?w=400",
+        "instructor": "Звуки природы",
+        "benefits": "Засыпание, спокойствие",
+        "tags": "лес,природа,ночь"
+    },
+    {
+        "type": "sleep",
+        "title": "Океанские волны",
+        "description": "Успокаивающий шум океана для глубокого сна",
+        "duration": "60 мин",
+        "category": "Природа",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/ocean-waves.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400",
+        "instructor": "Звуки природы",
+        "benefits": "Глубокий сон, расслабление",
+        "tags": "океан,волны,море"
+    },
+    {
+        "type": "sleep",
+        "title": "Дождь за окном",
+        "description": "Уютный звук дождя для комфортного засыпания",
+        "duration": "60 мин",
+        "category": "Природа",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/rain.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=400",
+        "instructor": "Звуки природы",
+        "benefits": "Уют, засыпание",
+        "tags": "дождь,уют,засыпание"
+    },
+    {
+        "type": "sleep",
+        "title": "Сказка на ночь: Путешествие к звёздам",
+        "description": "Волшебная история для мягкого погружения в сон",
+        "duration": "25 мин",
+        "category": "Истории",
+        "level": "Начинающий",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/star-journey.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400",
+        "instructor": "Елена Радость",
+        "benefits": "Воображение, засыпание",
+        "tags": "история,звёзды,сказка"
+    },
+    {
+        "type": "sleep",
+        "title": "Глубокий сон: Йога-нидра",
+        "description": "Практика осознанного расслабления для восстановления",
+        "duration": "30 мин",
+        "category": "Йога-нидра",
+        "level": "Средний",
+        "is_premium": True,
+        "audio_url": "https://storage.mindgarden.app/audio/yoga-nidra.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400",
+        "instructor": "Михаил Тихонов",
+        "benefits": "Глубокое восстановление, релаксация",
+        "tags": "йога-нидра,восстановление,глубокий сон"
+    },
+    {
+        "type": "sleep",
+        "title": "Белый шум",
+        "description": "Ровный белый шум для непрерывного сна",
+        "duration": "480 мин",
+        "category": "Шум",
+        "level": "Начинающий",
+        "is_premium": False,
+        "audio_url": "https://storage.mindgarden.app/audio/white-noise.mp3",
+        "thumbnail_url": "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=400",
+        "instructor": "Звуковой фон",
+        "benefits": "Маскировка шумов, непрерывный сон",
+        "tags": "белый шум,фон,непрерывный"
+    },
     
-    # Вечер
-    {"type": "meditation", "title": "Вечерняя благодарность", "description": "Завершение дня с благодарностью", "duration": "10 мин", "category": "Вечер", "level": "Начинающий", "is_premium": False, "instructor": "Елена Крылова", "thumbnail_url": "/images/gratitude.jpg", "audio_url": "/audio/gratitude.mp3"},
-    {"type": "meditation", "title": "Отпускание дня", "description": "Освобождение от дневного напряжения", "duration": "15 мин", "category": "Вечер", "level": "Средний", "is_premium": True, "instructor": "Ольга Белова", "thumbnail_url": "/images/let-go.jpg", "audio_url": "/audio/let-go.mp3"},
-    
-    # ============ YOGA ============
-    # Утренняя йога
-    {"type": "yoga", "title": "Утренняя виньяса", "description": "Динамичная практика для бодрого начала дня", "duration": "25 мин", "category": "Утренняя йога", "level": "Средний", "is_premium": False, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/morning-vinyasa.jpg", "video_url": "/video/morning-vinyasa.mp4"},
-    {"type": "yoga", "title": "Пробуждение тела", "description": "Мягкая практика для постепенного пробуждения", "duration": "15 мин", "category": "Утренняя йога", "level": "Начинающий", "is_premium": False, "instructor": "Ирина Солнцева", "thumbnail_url": "/images/body-awakening.jpg", "video_url": "/video/body-awakening.mp4"},
-    {"type": "yoga", "title": "Энергичное утро", "description": "Активная практика с акцентом на прогибы", "duration": "30 мин", "category": "Утренняя йога", "level": "Продвинутый", "is_premium": True, "instructor": "Максим Орлов", "thumbnail_url": "/images/energetic-morning.jpg", "video_url": "/video/energetic-morning.mp4"},
-    
-    # Хатха йога
-    {"type": "yoga", "title": "Хатха для начинающих", "description": "Основы йоги: базовые асаны и выравнивание", "duration": "30 мин", "category": "Хатха йога", "level": "Начинающий", "is_premium": False, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/hatha-beginner.jpg", "video_url": "/video/hatha-beginner.mp4"},
-    {"type": "yoga", "title": "Классическая хатха", "description": "Традиционная практика с долгими удержаниями", "duration": "45 мин", "category": "Хатха йога", "level": "Средний", "is_premium": True, "instructor": "Сергей Никитин", "thumbnail_url": "/images/classic-hatha.jpg", "video_url": "/video/classic-hatha.mp4"},
-    {"type": "yoga", "title": "Хатха: гибкость", "description": "Работа над гибкостью позвоночника и суставов", "duration": "40 мин", "category": "Хатха йога", "level": "Средний", "is_premium": True, "instructor": "Ирина Солнцева", "thumbnail_url": "/images/hatha-flexibility.jpg", "video_url": "/video/hatha-flexibility.mp4"},
-    
-    # Виньяса
-    {"type": "yoga", "title": "Flow виньяса", "description": "Плавный поток асан в связке с дыханием", "duration": "35 мин", "category": "Виньяса", "level": "Средний", "is_premium": False, "instructor": "Максим Орлов", "thumbnail_url": "/images/flow-vinyasa.jpg", "video_url": "/video/flow-vinyasa.mp4"},
-    {"type": "yoga", "title": "Интенсивная виньяса", "description": "Динамичная практика для продвинутых", "duration": "50 мин", "category": "Виньяса", "level": "Продвинутый", "is_premium": True, "instructor": "Максим Орлов", "thumbnail_url": "/images/intense-vinyasa.jpg", "video_url": "/video/intense-vinyasa.mp4"},
-    
-    # Силовая йога
-    {"type": "yoga", "title": "Power Yoga", "description": "Силовая практика для укрепления мышц", "duration": "40 мин", "category": "Силовая йога", "level": "Средний", "is_premium": True, "instructor": "Сергей Никитин", "thumbnail_url": "/images/power-yoga.jpg", "video_url": "/video/power-yoga.mp4"},
-    {"type": "yoga", "title": "Йога для кора", "description": "Укрепление мышц живота и спины", "duration": "25 мин", "category": "Силовая йога", "level": "Средний", "is_premium": False, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/core-yoga.jpg", "video_url": "/video/core-yoga.mp4"},
-    
-    # Инь йога
-    {"type": "yoga", "title": "Глубокий инь", "description": "Долгие растяжки для глубокого расслабления", "duration": "45 мин", "category": "Инь йога", "level": "Любой", "is_premium": True, "instructor": "Ирина Солнцева", "thumbnail_url": "/images/deep-yin.jpg", "video_url": "/video/deep-yin.mp4"},
-    {"type": "yoga", "title": "Инь для бёдер", "description": "Раскрытие тазобедренных суставов", "duration": "30 мин", "category": "Инь йога", "level": "Начинающий", "is_premium": False, "instructor": "Ирина Солнцева", "thumbnail_url": "/images/yin-hips.jpg", "video_url": "/video/yin-hips.mp4"},
-    
-    # Вечерняя йога
-    {"type": "yoga", "title": "Вечерняя растяжка", "description": "Мягкая практика перед сном", "duration": "20 мин", "category": "Вечерняя йога", "level": "Начинающий", "is_premium": False, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/evening-stretch.jpg", "video_url": "/video/evening-stretch.mp4"},
-    {"type": "yoga", "title": "Йога-нидра", "description": "Глубокое расслабление на грани сна", "duration": "35 мин", "category": "Вечерняя йога", "level": "Любой", "is_premium": True, "instructor": "Мария Покровская", "thumbnail_url": "/images/yoga-nidra.jpg", "audio_url": "/audio/yoga-nidra.mp3"},
-    
-    # ============ SLEEP ============
-    # Засыпание
-    {"type": "sleep", "title": "Быстрое засыпание", "description": "Расслабление тела и ума для быстрого сна", "duration": "20 мин", "category": "Медитация сна", "level": "Начинающий", "is_premium": False, "instructor": "Анна Светлова", "thumbnail_url": "/images/quick-sleep.jpg", "audio_url": "/audio/quick-sleep.mp3"},
-    {"type": "sleep", "title": "Сканирование тела", "description": "Последовательное расслабление всего тела", "duration": "25 мин", "category": "Медитация сна", "level": "Любой", "is_premium": False, "instructor": "Дмитрий Волков", "thumbnail_url": "/images/body-scan.jpg", "audio_url": "/audio/body-scan.mp3"},
-    {"type": "sleep", "title": "Глубокий сон", "description": "Медитация для качественного глубокого сна", "duration": "30 мин", "category": "Медитация сна", "level": "Средний", "is_premium": True, "instructor": "Мария Покровская", "thumbnail_url": "/images/deep-sleep.jpg", "audio_url": "/audio/deep-sleep.mp3"},
-    
-    # Истории
-    {"type": "sleep", "title": "Путешествие в горы", "description": "Успокаивающая история о горном путешествии", "duration": "35 мин", "category": "История для сна", "level": "Любой", "is_premium": False, "instructor": "Алексей Миронов", "thumbnail_url": "/images/mountain-story.jpg", "audio_url": "/audio/mountain-story.mp3"},
-    {"type": "sleep", "title": "Тихая гавань", "description": "История о плавании к спокойному острову", "duration": "40 мин", "category": "История для сна", "level": "Любой", "is_premium": True, "instructor": "Елена Крылова", "thumbnail_url": "/images/harbor-story.jpg", "audio_url": "/audio/harbor-story.mp3"},
-    {"type": "sleep", "title": "Звёздная ночь", "description": "Путешествие среди звёзд", "duration": "30 мин", "category": "История для сна", "level": "Любой", "is_premium": True, "instructor": "Ольга Белова", "thumbnail_url": "/images/starry-night.jpg", "audio_url": "/audio/starry-night.mp3"},
-    
-    # Звуки природы
-    {"type": "sleep", "title": "Дождь за окном", "description": "Звук дождя для умиротворения", "duration": "60 мин", "category": "Природа", "level": "Любой", "is_premium": False, "thumbnail_url": "/images/rain.jpg", "audio_url": "/audio/rain.mp3"},
-    {"type": "sleep", "title": "Ночной лес", "description": "Звуки ночного леса: сверчки и совы", "duration": "60 мин", "category": "Природа", "level": "Любой", "is_premium": False, "thumbnail_url": "/images/night-forest.jpg", "audio_url": "/audio/night-forest.mp3"},
-    {"type": "sleep", "title": "Океанские волны", "description": "Мягкий шум прибоя", "duration": "60 мин", "category": "Природа", "level": "Любой", "is_premium": False, "thumbnail_url": "/images/ocean-waves.jpg", "audio_url": "/audio/ocean-waves.mp3"},
-    {"type": "sleep", "title": "Гроза вдалеке", "description": "Раскаты грома и шум дождя", "duration": "60 мин", "category": "Природа", "level": "Любой", "is_premium": True, "thumbnail_url": "/images/distant-storm.jpg", "audio_url": "/audio/distant-storm.mp3"},
-    
-    # Амбиент
-    {"type": "sleep", "title": "Космическая тишина", "description": "Амбиентная музыка для глубокого сна", "duration": "120 мин", "category": "Амбиент", "level": "Любой", "is_premium": True, "thumbnail_url": "/images/cosmic-silence.jpg", "audio_url": "/audio/cosmic-silence.mp3"},
-    {"type": "sleep", "title": "Тибетские чаши", "description": "Поющие чаши для расслабления", "duration": "45 мин", "category": "Амбиент", "level": "Любой", "is_premium": False, "thumbnail_url": "/images/tibetan-bowls.jpg", "audio_url": "/audio/tibetan-bowls.mp3"},
-    {"type": "sleep", "title": "Пианино для сна", "description": "Нежные мелодии фортепиано", "duration": "60 мин", "category": "Амбиент", "level": "Любой", "is_premium": True, "thumbnail_url": "/images/piano-sleep.jpg", "audio_url": "/audio/piano-sleep.mp3"},
-    
-    # ============ ДОПОЛНИТЕЛЬНО ============
-    # Дыхание
-    {"type": "meditation", "title": "4-7-8 Дыхание", "description": "Техника дыхания для быстрого успокоения", "duration": "8 мин", "category": "Дыхание", "level": "Начинающий", "is_premium": False, "instructor": "Андрей Соколов", "thumbnail_url": "/images/478-breathing.jpg", "audio_url": "/audio/478-breathing.mp3"},
-    {"type": "meditation", "title": "Холотропное дыхание", "description": "Интенсивная практика для опытных", "duration": "45 мин", "category": "Дыхание", "level": "Продвинутый", "is_premium": True, "instructor": "Сергей Никитин", "thumbnail_url": "/images/holotropic.jpg", "audio_url": "/audio/holotropic.mp3"},
-    {"type": "meditation", "title": "Коробочное дыхание", "description": "Балансирующая техника 4-4-4-4", "duration": "10 мин", "category": "Дыхание", "level": "Любой", "is_premium": False, "instructor": "Дмитрий Волков", "thumbnail_url": "/images/box-breathing.jpg", "audio_url": "/audio/box-breathing.mp3"},
-    
-    # Специальные
-    {"type": "meditation", "title": "Медитация любящей доброты", "description": "Развитие сострадания к себе и другим", "duration": "15 мин", "category": "Сострадание", "level": "Любой", "is_premium": False, "instructor": "Анна Светлова", "thumbnail_url": "/images/loving-kindness.jpg", "audio_url": "/audio/loving-kindness.mp3"},
-    {"type": "meditation", "title": "Работа с гневом", "description": "Трансформация гнева в энергию", "duration": "20 мин", "category": "Эмоции", "level": "Средний", "is_premium": True, "instructor": "Мария Покровская", "thumbnail_url": "/images/anger-work.jpg", "audio_url": "/audio/anger-work.mp3"},
-    {"type": "meditation", "title": "Прощение", "description": "Медитация для освобождения от обид", "duration": "25 мин", "category": "Эмоции", "level": "Средний", "is_premium": True, "instructor": "Елена Крылова", "thumbnail_url": "/images/forgiveness.jpg", "audio_url": "/audio/forgiveness.mp3"},
-    
-    # Йога для здоровья
-    {"type": "yoga", "title": "Йога для спины", "description": "Снятие напряжения и укрепление спины", "duration": "25 мин", "category": "Здоровье", "level": "Начинающий", "is_premium": False, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/back-yoga.jpg", "video_url": "/video/back-yoga.mp4"},
-    {"type": "yoga", "title": "Йога для шеи и плеч", "description": "Расслабление воротниковой зоны", "duration": "20 мин", "category": "Здоровье", "level": "Начинающий", "is_premium": False, "instructor": "Ирина Солнцева", "thumbnail_url": "/images/neck-yoga.jpg", "video_url": "/video/neck-yoga.mp4"},
-    {"type": "yoga", "title": "Йога при головной боли", "description": "Мягкие асаны для снятия головной боли", "duration": "15 мин", "category": "Здоровье", "level": "Начинающий", "is_premium": True, "instructor": "Катерина Лунёва", "thumbnail_url": "/images/headache-yoga.jpg", "video_url": "/video/headache-yoga.mp4"},
+    # ==================== CBT УПРАЖНЕНИЯ ====================
+    {
+        "type": "cbt",
+        "title": "Когнитивная переоценка",
+        "description": "Научитесь находить альтернативные взгляды на ситуацию",
+        "duration": "10 мин",
+        "category": "Мысли",
+        "level": "Начинающий",
+        "is_premium": False,
+        "thumbnail_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Гибкость мышления, новые перспективы",
+        "tags": "мысли,переоценка,перспектива"
+    },
+    {
+        "type": "cbt",
+        "title": "Дневник мыслей",
+        "description": "Записывайте и анализируйте автоматические мысли",
+        "duration": "15 мин",
+        "category": "Журнал",
+        "level": "Начинающий",
+        "is_premium": False,
+        "thumbnail_url": "https://images.unsplash.com/photo-1517842645767-c639042777db?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Осознание паттернов, самопознание",
+        "tags": "дневник,записи,анализ"
+    },
+    {
+        "type": "cbt",
+        "title": "СТОП-техника",
+        "description": "Прервите негативный цикл мыслей за 5 шагов",
+        "duration": "5 мин",
+        "category": "Экспресс",
+        "level": "Начинающий",
+        "is_premium": False,
+        "thumbnail_url": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Прерывание негатива, контроль",
+        "tags": "стоп,экспресс,контроль"
+    },
+    {
+        "type": "cbt",
+        "title": "Техника заземления 5-4-3-2-1",
+        "description": "Вернитесь в настоящий момент через органы чувств",
+        "duration": "5 мин",
+        "category": "Заземление",
+        "level": "Начинающий",
+        "is_premium": False,
+        "thumbnail_url": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Заземление, присутствие",
+        "tags": "заземление,чувства,момент"
+    },
+    {
+        "type": "cbt",
+        "title": "Поведенческая активация",
+        "description": "Планируйте приятные и осмысленные действия",
+        "duration": "20 мин",
+        "category": "Активность",
+        "level": "Средний",
+        "is_premium": True,
+        "thumbnail_url": "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Мотивация, планирование",
+        "tags": "активация,планирование,действия"
+    },
+    {
+        "type": "cbt",
+        "title": "Рефрейминг",
+        "description": "Измените восприятие ситуации на более полезное",
+        "duration": "10 мин",
+        "category": "Мысли",
+        "level": "Средний",
+        "is_premium": True,
+        "thumbnail_url": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400",
+        "instructor": "CBT практика",
+        "benefits": "Новый взгляд, гибкость",
+        "tags": "рефрейминг,взгляд,изменение"
+    },
 ]
 
 
 def seed_database():
-    """Наполнить базу данных контентом"""
+    """Populate database with content"""
     db = SessionLocal()
     
     try:
-        # Проверяем, есть ли уже контент
-        existing = db.query(ContentDB).count()
-        if existing > 0:
-            print(f"База уже содержит {existing} записей. Пропускаем.")
-            return
+        # Clear existing content
+        db.query(ContentDB).delete()
+        db.commit()
         
-        for item in CONTENT_DATA:
-            content = ContentDB(
-                type=item["type"],
-                title=item["title"],
-                description=item["description"],
-                duration=item.get("duration"),
-                category=item.get("category"),
-                level=item.get("level"),
-                is_premium=item.get("is_premium", False),
-                audio_url=item.get("audio_url"),
-                video_url=item.get("video_url"),
-                thumbnail_url=item.get("thumbnail_url"),
-                instructor=item.get("instructor"),
-                benefits=item.get("benefits"),
-                tags=item.get("tags"),
-            )
+        # Add new content
+        for item in CONTENT:
+            content = ContentDB(**item)
             db.add(content)
         
         db.commit()
-        print(f"✅ Добавлено {len(CONTENT_DATA)} записей в базу данных")
+        print(f"✅ Successfully added {len(CONTENT)} content items")
         
+        # Show summary
+        types = {}
+        for item in CONTENT:
+            t = item["type"]
+            types[t] = types.get(t, 0) + 1
+        
+        print("\n📊 Content summary:")
+        for t, count in types.items():
+            print(f"  - {t}: {count}")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        db.rollback()
     finally:
         db.close()
 

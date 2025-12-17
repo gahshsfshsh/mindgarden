@@ -1,196 +1,138 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 
 class ApiService {
-  // Измените на URL вашего API после деплоя
-  static const String baseUrl = kDebugMode 
-      ? 'http://10.0.2.2:8000'  // Android Emulator
-      : 'https://zenflow-api.vercel.app';
+  // Change this to your backend URL
+  static const String baseUrl = 'http://localhost:8000';
   
-  String? _token;
+  static String? _token;
   
-  // Singleton
-  static final ApiService _instance = ApiService._internal();
-  factory ApiService() => _instance;
-  ApiService._internal();
-
-  /// Получить токен из хранилища
-  Future<String?> getToken() async {
-    if (_token != null) return _token;
+  static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('auth_token');
-    return _token;
   }
-
-  /// Сохранить токен
-  Future<void> setToken(String token) async {
+  
+  static Future<void> setToken(String token) async {
     _token = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
   }
-
-  /// Удалить токен (выход)
-  Future<void> clearToken() async {
+  
+  static Future<void> clearToken() async {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
   }
-
-  /// Заголовки
-  Future<Map<String, String>> _getHeaders({bool auth = true}) async {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    
-    if (auth) {
-      final token = await getToken();
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-    }
-    
-    return headers;
-  }
-
-  /// GET запрос
-  Future<http.Response> get(
-    String endpoint, {
-    Map<String, dynamic>? queryParams,
-    bool auth = true,
-  }) async {
-    final uri = Uri.parse('$baseUrl$endpoint').replace(
-      queryParameters: queryParams?.map((k, v) => MapEntry(k, v.toString())),
-    );
-    
-    final headers = await _getHeaders(auth: auth);
-    
-    debugPrint('GET: $uri');
-    
-    return http.get(uri, headers: headers);
-  }
-
-  /// POST запрос
-  Future<http.Response> post(
-    String endpoint, {
-    Map<String, dynamic>? body,
-    bool auth = true,
-  }) async {
-    final uri = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders(auth: auth);
-    
-    debugPrint('POST: $uri');
-    debugPrint('Body: $body');
-    
-    return http.post(
-      uri,
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
-  }
-
-  /// PUT запрос
-  Future<http.Response> put(
-    String endpoint, {
-    Map<String, dynamic>? body,
-    bool auth = true,
-  }) async {
-    final uri = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders(auth: auth);
-    
-    return http.put(
-      uri,
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
-  }
-
-  /// DELETE запрос
-  Future<http.Response> delete(
-    String endpoint, {
-    bool auth = true,
-  }) async {
-    final uri = Uri.parse('$baseUrl$endpoint');
-    final headers = await _getHeaders(auth: auth);
-    
-    return http.delete(uri, headers: headers);
-  }
-
+  
+  static Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
+  
   // ==================== AUTH ====================
-
-  /// Регистрация
-  Future<Map<String, dynamic>> register({
+  
+  static Future<Map<String, dynamic>> register({
     required String email,
     required String password,
     required String name,
   }) async {
-    final response = await post(
-      '/api/auth/register',
-      body: {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/register'),
+      headers: _headers,
+      body: jsonEncode({
         'email': email,
         'password': password,
         'name': name,
-      },
-      auth: false,
+      }),
     );
-
+    
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await setToken(data['access_token']);
       return data;
     } else {
-      throw ApiException(
-        response.statusCode,
-        jsonDecode(response.body)['detail'] ?? 'Ошибка регистрации',
-      );
+      throw Exception(jsonDecode(response.body)['detail'] ?? 'Registration failed');
     }
   }
-
-  /// Вход
-  Future<Map<String, dynamic>> login({
+  
+  static Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
-    final uri = Uri.parse('$baseUrl/api/auth/login');
-    
     final response = await http.post(
-      uri,
+      Uri.parse('$baseUrl/api/auth/login'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: {
-        'username': email,
-        'password': password,
-      },
+      body: 'username=$email&password=$password',
     );
-
+    
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await setToken(data['access_token']);
       return data;
     } else {
-      throw ApiException(
-        response.statusCode,
-        jsonDecode(response.body)['detail'] ?? 'Неверный email или пароль',
-      );
+      throw Exception(jsonDecode(response.body)['detail'] ?? 'Login failed');
     }
   }
-
-  /// Текущий пользователь
-  Future<Map<String, dynamic>> getCurrentUser() async {
-    final response = await get('/api/auth/me');
-
+  
+  static Future<Map<String, dynamic>> getCurrentUser() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/auth/me'),
+      headers: _headers,
+    );
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка получения пользователя');
+      throw Exception('Failed to get user');
     }
   }
-
+  
+  // ==================== AI CHAT ====================
+  
+  static Future<Map<String, dynamic>> sendChatMessage(String message) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/chat'),
+      headers: _headers,
+      body: jsonEncode({'message': message}),
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else if (response.statusCode == 429) {
+      throw Exception('Лимит сообщений исчерпан. Оформите подписку для безлимитного доступа.');
+    } else {
+      throw Exception('Failed to send message');
+    }
+  }
+  
+  static Future<List<Map<String, dynamic>>> getChatHistory({int limit = 50}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/chat/history?limit=$limit'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to get chat history');
+    }
+  }
+  
+  static Future<void> clearChatHistory() async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/chat/history'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to clear chat history');
+    }
+  }
+  
   // ==================== CONTENT ====================
-
-  /// Получить контент
-  Future<List<dynamic>> getContent({
+  
+  static Future<List<Map<String, dynamic>>> getContent({
     String? type,
     String? category,
     String? level,
@@ -200,7 +142,7 @@ class ApiService {
     int limit = 50,
     int offset = 0,
   }) async {
-    final queryParams = <String, dynamic>{
+    final queryParams = <String, String>{
       'sort': sort,
       'limit': limit.toString(),
       'offset': offset.toString(),
@@ -211,122 +153,160 @@ class ApiService {
     if (level != null) queryParams['level'] = level;
     if (isPremium != null) queryParams['is_premium'] = isPremium.toString();
     if (search != null) queryParams['search'] = search;
-
-    final response = await get('/api/content', queryParams: queryParams);
-
+    
+    final uri = Uri.parse('$baseUrl/api/content').replace(queryParameters: queryParams);
+    final response = await http.get(uri, headers: _headers);
+    
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
-      throw ApiException(response.statusCode, 'Ошибка загрузки контента');
+      throw Exception('Failed to get content');
     }
   }
-
-  /// Получить рекомендации
-  Future<List<dynamic>> getRecommendations({int limit = 10}) async {
-    final response = await get(
-      '/api/recommendations',
-      queryParams: {'limit': limit.toString()},
+  
+  static Future<Map<String, dynamic>> getContentById(int id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/content/$id'),
+      headers: _headers,
     );
-
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка загрузки рекомендаций');
+      throw Exception('Content not found');
     }
   }
-
+  
+  static Future<void> recordPlay(int contentId) async {
+    await http.post(
+      Uri.parse('$baseUrl/api/content/$contentId/play'),
+      headers: _headers,
+    );
+  }
+  
   // ==================== PROGRESS ====================
-
-  /// Получить прогресс
-  Future<Map<String, dynamic>> getProgress() async {
-    final response = await get('/api/progress');
-
+  
+  static Future<Map<String, dynamic>> getProgress() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/progress'),
+      headers: _headers,
+    );
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка загрузки прогресса');
+      throw Exception('Failed to get progress');
     }
   }
-
-  /// Записать сессию
-  Future<Map<String, dynamic>> recordSession({
+  
+  static Future<Map<String, dynamic>> completeSession({
     required int contentId,
     required int durationMinutes,
     int? rating,
   }) async {
-    final response = await post(
-      '/api/progress/session',
-      body: {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/progress/session'),
+      headers: _headers,
+      body: jsonEncode({
         'content_id': contentId,
         'duration_minutes': durationMinutes,
         if (rating != null) 'rating': rating,
-      },
+      }),
     );
-
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка записи сессии');
+      throw Exception('Failed to complete session');
     }
   }
-
-  /// Получить достижения
-  Future<List<dynamic>> getAchievements() async {
-    final response = await get('/api/progress/achievements');
-
+  
+  static Future<List<Map<String, dynamic>>> getAchievements() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/progress/achievements'),
+      headers: _headers,
+    );
+    
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
-      throw ApiException(response.statusCode, 'Ошибка загрузки достижений');
+      throw Exception('Failed to get achievements');
     }
   }
-
+  
   // ==================== MOOD ====================
-
-  /// Записать настроение
-  Future<Map<String, dynamic>> recordMood({
+  
+  static Future<Map<String, dynamic>> recordMood({
     required int moodValue,
     List<String> factors = const [],
     String? note,
   }) async {
-    final response = await post(
-      '/api/mood',
-      body: {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/mood'),
+      headers: _headers,
+      body: jsonEncode({
         'mood_value': moodValue,
         'factors': factors,
         if (note != null) 'note': note,
-      },
+      }),
     );
-
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка записи настроения');
+      throw Exception('Failed to record mood');
     }
   }
-
-  /// История настроения
-  Future<List<dynamic>> getMoodHistory({int days = 30}) async {
-    final response = await get(
-      '/api/mood/history',
-      queryParams: {'days': days.toString()},
+  
+  static Future<List<Map<String, dynamic>>> getMoodHistory({int days = 30}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/mood/history?days=$days'),
+      headers: _headers,
     );
-
+    
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to get mood history');
+    }
+  }
+  
+  // ==================== RECOMMENDATIONS ====================
+  
+  static Future<List<Map<String, dynamic>>> getRecommendations({int limit = 10}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/recommendations?limit=$limit'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to get recommendations');
+    }
+  }
+  
+  // ==================== PAYMENTS ====================
+  
+  static Future<Map<String, dynamic>> createPayment({
+    required String plan,
+    String provider = 'yukassa',
+    String? returnUrl,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/payments/create'),
+      headers: _headers,
+      body: jsonEncode({
+        'plan': plan,
+        'provider': provider,
+        if (returnUrl != null) 'return_url': returnUrl,
+      }),
+    );
+    
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw ApiException(response.statusCode, 'Ошибка загрузки истории');
+      throw Exception('Failed to create payment');
     }
   }
-}
-
-/// Исключение API
-class ApiException implements Exception {
-  final int statusCode;
-  final String message;
-
-  ApiException(this.statusCode, this.message);
-
-  @override
-  String toString() => 'ApiException($statusCode): $message';
 }

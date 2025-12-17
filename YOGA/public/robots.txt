@@ -1,0 +1,21 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://zenflow.app/sitemap.xml
+
+# Disallow private areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /downloads/
+
+# Allow images and media
+Allow: /images/
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.gif$
+Allow: /*.webp$
+

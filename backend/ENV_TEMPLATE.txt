@@ -1,0 +1,22 @@
+# Создайте файл .env и скопируйте эти значения
+
+# Database (Vercel Postgres)
+POSTGRES_URL=postgres://user:password@host:5432/database
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-this
+
+# ЮКасса
+YUKASSA_SHOP_ID=your_shop_id
+YUKASSA_SECRET_KEY=your_secret_key
+
+# Stripe (optional)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRICE_PREMIUM=price_...
+STRIPE_PRICE_LIFETIME=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Frontend URL
+FRONTEND_URL=https://zenflow.vercel.app
+
+

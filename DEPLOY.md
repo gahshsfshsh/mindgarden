@@ -1,143 +1,283 @@
-# 🚀 Деплой ZenFlow на Vercel
+# 🚀 Инструкции по деплою MindGarden
 
-## Предварительные требования
+## 1. Деплой Backend на сервер (SSH)
 
-1. Аккаунт на [Vercel](https://vercel.com)
-2. Установленный [Vercel CLI](https://vercel.com/cli): `npm i -g vercel`
-3. Аккаунт на [Stripe](https://stripe.com) для платежей
-
----
-
-## 1️⃣ Настройка Vercel Postgres
-
-1. Откройте [Vercel Dashboard](https://vercel.com/dashboard)
-2. Выберите "Storage" → "Create Database" → "Postgres"
-3. Скопируйте `POSTGRES_URL` из настроек базы
-
----
-
-## 2️⃣ Деплой Backend (Python API)
+### Подключение к серверу
 
 ```bash
-cd backend
-
-# Войти в Vercel
-vercel login
-
-# Деплой
-vercel --prod
+ssh alexei@158.255.6.22
 ```
 
-### Переменные окружения для Backend:
-
-В Vercel Dashboard → Settings → Environment Variables добавьте:
-
-```
-POSTGRES_URL=postgresql://...
-JWT_SECRET=ваш-секретный-ключ-32-символа
-STRIPE_SECRET_KEY=sk_live_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-STRIPE_PRICE_PREMIUM=price_xxx
-STRIPE_PRICE_LIFETIME=price_yyy
-FRONTEND_URL=https://zenflow.vercel.app
-```
-
-### Заполнение базы контентом:
+### Первоначальная установка (один раз)
 
 ```bash
-cd backend
+# Обновляем систему
+sudo apt update && sudo apt upgrade -y
+
+# Устанавливаем необходимые пакеты
+sudo apt install -y python3.11 python3.11-venv python3-pip git nginx certbot python3-certbot-nginx
+
+# Клонируем репозиторий
+cd /home/alexei
+git clone https://github.com/gahshsfshsh/mindgarden.git
+cd mindgarden/backend
+
+# Создаём виртуальное окружение
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Устанавливаем зависимости
+pip install -r requirements.txt
+
+# Создаём .env файл
+cp ENV_TEMPLATE.txt .env
+nano .env  # Заполняем переменные
+
+# Наполняем базу данных
 python seed_content.py
+
+# Создаём systemd сервис
+sudo nano /etc/systemd/system/mindgarden.service
+```
+
+### Содержимое mindgarden.service:
+
+```ini
+[Unit]
+Description=MindGarden API
+After=network.target
+
+[Service]
+User=alexei
+Group=alexei
+WorkingDirectory=/home/alexei/mindgarden/backend
+Environment="PATH=/home/alexei/mindgarden/backend/venv/bin"
+ExecStart=/home/alexei/mindgarden/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Запуск сервиса:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable mindgarden
+sudo systemctl start mindgarden
+sudo systemctl status mindgarden
+```
+
+### Настройка Nginx (reverse proxy):
+
+```bash
+sudo nano /etc/nginx/sites-available/mindgarden
+```
+
+Содержимое:
+```nginx
+server {
+    listen 80;
+    server_name api.mindgarden.app 158.255.6.22;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/mindgarden /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### SSL сертификат (если есть домен):
+
+```bash
+sudo certbot --nginx -d api.mindgarden.app
 ```
 
 ---
 
-## 3️⃣ Деплой Landing (Next.js)
+## 🔄 Обновление бэкенда (при новых изменениях)
 
 ```bash
-cd landing
-
-# Установить зависимости
-npm install
-
-# Деплой
-vercel --prod
+ssh alexei@158.255.6.22
+cd /home/alexei/mindgarden
+git pull origin main
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+sudo systemctl restart mindgarden
 ```
 
-Или подключите репозиторий напрямую:
-1. Vercel Dashboard → New Project
-2. Import Git Repository
-3. Root Directory: `landing`
-4. Framework: Next.js
+### Одной командой:
+
+```bash
+ssh alexei@158.255.6.22 "cd /home/alexei/mindgarden && git pull && cd backend && source venv/bin/activate && pip install -r requirements.txt && sudo systemctl restart mindgarden"
+```
 
 ---
 
-## 4️⃣ Настройка Stripe
+## 2. Сборка iOS для TestFlight (для второго разработчика)
 
-### Создание продуктов:
+### Требования:
+- macOS с установленным Xcode (14.0+)
+- Apple Developer Account
+- Flutter SDK 3.16+
 
-1. Stripe Dashboard → Products → Add Product
-2. Создайте "Premium Monthly" (490₽/месяц) - получите `price_xxx`
-3. Создайте "Lifetime" (4990₽ один раз) - получите `price_yyy`
-
-### Настройка Webhook:
-
-1. Stripe Dashboard → Developers → Webhooks
-2. Add endpoint: `https://your-api.vercel.app/api/webhook/stripe`
-3. Выберите события: `checkout.session.completed`, `customer.subscription.*`
-4. Скопируйте Signing secret в `STRIPE_WEBHOOK_SECRET`
-
----
-
-## 5️⃣ Сборка Flutter приложения
-
-### Android:
+### Шаги:
 
 ```bash
-cd mobile
-flutter build apk --release
+# 1. Клонируем репозиторий
+git clone https://github.com/gahshsfshsh/mindgarden.git
+cd mindgarden/mobile
+
+# 2. Устанавливаем зависимости Flutter
+flutter pub get
+
+# 3. Обновляем API URL для продакшена
+# Открыть lib/core/services/api_service.dart
+# Изменить baseUrl на: 'http://158.255.6.22:8000' или ваш домен
+
+# 4. Переходим в iOS папку
+cd ios
+
+# 5. Устанавливаем CocoaPods зависимости
+pod install --repo-update
+
+# 6. Открываем в Xcode
+open Runner.xcworkspace
 ```
 
-APK файл: `mobile/build/app/outputs/flutter-apk/app-release.apk`
+### В Xcode:
 
-### iOS (только на macOS):
+1. **Signing & Capabilities:**
+   - Выберите Team (ваш Apple Developer Account)
+   - Bundle Identifier: `com.mindgarden.app` (или свой)
+   - Выберите Provisioning Profile
+
+2. **Изменить версию:**
+   - Target → Runner → General
+   - Version: `3.0.0`
+   - Build: увеличьте на 1
+
+3. **Архивирование:**
+   - Product → Scheme → Edit Scheme → Archive → Release
+   - Product → Archive
+   - Дождитесь завершения
+
+4. **Загрузка в TestFlight:**
+   - Window → Organizer
+   - Выберите архив → Distribute App
+   - App Store Connect → Upload
+   - Следуйте инструкциям
+
+### Альтернативно через командную строку:
 
 ```bash
+# Сборка iOS release
+cd /path/to/mindgarden/mobile
 flutter build ios --release
+
+# Архивирование
+cd ios
+xcodebuild -workspace Runner.xcworkspace \
+  -scheme Runner \
+  -sdk iphoneos \
+  -configuration Release \
+  archive \
+  -archivePath build/Runner.xcarchive
+
+# Экспорт IPA
+xcodebuild -exportArchive \
+  -archivePath build/Runner.xcarchive \
+  -exportPath build/ipa \
+  -exportOptionsPlist ExportOptions.plist
+
+# Загрузка в App Store Connect
+xcrun altool --upload-app \
+  -f build/ipa/Runner.ipa \
+  -t ios \
+  -u "your-apple-id@email.com" \
+  -p "app-specific-password"
 ```
 
-Откройте `ios/Runner.xcworkspace` в Xcode для публикации в App Store.
+---
+
+## 3. Сборка Android для внутреннего тестирования
+
+```bash
+cd /path/to/mindgarden/mobile
+
+# Обновить API URL в lib/core/services/api_service.dart
+
+# Сборка APK
+flutter build apk --release
+
+# APK будет в: build/app/outputs/flutter-apk/app-release.apk
+
+# Или App Bundle для Google Play
+flutter build appbundle --release
+# AAB будет в: build/app/outputs/bundle/release/app-release.aab
+```
 
 ---
 
-## 📋 Чек-лист деплоя
+## 4. Переменные окружения для бэкенда (.env)
 
-- [ ] Создана Vercel Postgres база
-- [ ] Backend задеплоен на Vercel
-- [ ] Переменные окружения настроены
-- [ ] База заполнена контентом
-- [ ] Landing задеплоен на Vercel
-- [ ] Stripe продукты созданы
-- [ ] Stripe webhook настроен
-- [ ] Flutter APK собран
-- [ ] Домен привязан (опционально)
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/mindgarden
+# или для SQLite
+# DATABASE_URL=sqlite:///./mindgarden.db
 
----
+# Security
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
 
-## 🔗 Финальные URL
+# OpenAI (обязательно для AI чата)
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
 
-После деплоя у вас будут:
-
-- **Landing**: `https://zenflow.vercel.app`
-- **API**: `https://zenflow-api.vercel.app`
-- **API Docs**: `https://zenflow-api.vercel.app/docs`
+# Payments (опционально)
+YUKASSA_SHOP_ID=your-shop-id
+YUKASSA_SECRET_KEY=your-secret-key
+STRIPE_SECRET_KEY=sk_live_xxxxx
+```
 
 ---
 
-## 🆘 Поддержка
+## 5. Проверка работы
 
-При проблемах проверьте:
-1. Логи в Vercel Dashboard → Deployments → Functions
-2. Stripe Dashboard → Developers → Logs
-3. Переменные окружения корректны
+После деплоя проверьте:
 
+```bash
+# Статус API
+curl http://158.255.6.22:8000/
 
+# Health check
+curl http://158.255.6.22:8000/health
+
+# Документация API
+# Откройте в браузере: http://158.255.6.22:8000/docs
+```
+
+---
+
+## 📱 Контакты
+
+**GitHub:** https://github.com/gahshsfshsh/mindgarden
+**API:** http://158.255.6.22:8000
+
+---
+
+Made with 💚 by MindGarden Team

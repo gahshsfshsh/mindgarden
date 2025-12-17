@@ -73,16 +73,10 @@ flutter:
     - assets/audio/
     - assets/animations/
     - assets/icons/
-  
-  fonts:
-    - family: SF Pro Display
-      fonts:
-        - asset: assets/fonts/SF-Pro-Display-Regular.otf
-        - asset: assets/fonts/SF-Pro-Display-Medium.otf
-          weight: 500
-        - asset: assets/fonts/SF-Pro-Display-Semibold.otf
-          weight: 600
-        - asset: assets/fonts/SF-Pro-Display-Bold.otf
-          weight: 700
-        - asset: assets/fonts/SF-Pro-Display-Heavy.otf
-          weight: 800
+
+  # Используем системные шрифты для iOS/Android
+  # Кастомные шрифты можно добавить позже:
+  # fonts:
+  #   - family: SF Pro Display
+  #     fonts:
+  #       - asset: assets/fonts/SF-Pro-Display-Regular.otf

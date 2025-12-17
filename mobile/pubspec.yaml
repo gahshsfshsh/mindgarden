@@ -2,7 +2,7 @@ name: mindgarden
 description: "MindGarden - Забота о ментальном здоровье. Медитации, CBT-упражнения, AI-собеседник и трекер настроения."
 publish_to: 'none'
 
-version: 2.0.0+1
+version: 2.1.0+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -54,6 +54,9 @@ dependencies:
   
   # Notifications
   flutter_local_notifications: ^16.3.0
+  
+  # Payments - YooKassa
+  yookassa_payments_flutter: ^1.10.0
 
 dev_dependencies:
   flutter_test:

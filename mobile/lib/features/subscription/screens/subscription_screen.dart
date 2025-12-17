@@ -78,7 +78,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
                       AppColors.primary.withOpacity(0.3),
@@ -90,42 +90,42 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
+                    children: [
+                      Container(
                           width: 60,
                           height: 60,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
                             borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.4),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
                           child: const Icon(Icons.eco_rounded, color: Colors.white, size: 32),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                      const Text(
                           'Раскройте весь потенциал',
-                          style: TextStyle(
+                        style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                          color: AppColors.textPrimary,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
                           '7 дней бесплатно, затем подписка',
-                          style: TextStyle(
+                        style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                          color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -142,11 +142,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Disclaimer
-                Container(
+                      Container(
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                   ),
@@ -162,27 +162,27 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
 
                 // Plan cards
                 ...List.generate(_plans.length, (index) {
                   return _buildPlanCard(_plans[index], index);
                 }),
 
-                const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                 // CTA Button
                 GestureDetector(
                   onTap: () => _handleSubscribe(),
                   child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
+                        width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary.withOpacity(0.4),
@@ -194,17 +194,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                     child: const Center(
                       child: Text(
                         'Начать бесплатный период',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
-                  ),
                 ),
 
-                const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                 // Terms
                 const Center(
@@ -245,7 +245,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
+                        decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
                   colors: [
@@ -322,7 +322,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
+                        children: [
                     Text(
                       plan.price,
                       style: TextStyle(
@@ -331,11 +331,11 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                         color: isSelected ? AppColors.primary : AppColors.textPrimary,
                       ),
                     ),
-                    Text(
+                      Text(
                       '/ ${plan.period}',
                       style: const TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                          color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -343,7 +343,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ],
             ),
             if (isSelected) ...[
-              const SizedBox(height: 16),
+                      const SizedBox(height: 16),
               const Divider(color: Color(0xFF1A3324)),
               const SizedBox(height: 12),
               ...plan.features.map((feature) => Padding(
@@ -369,10 +369,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textPrimary,
-                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                   )),
             ],
           ],
@@ -384,15 +384,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
   Widget _buildFeaturesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
+            children: [
+              const Text(
           'Что вы получите',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+                  color: AppColors.textPrimary,
+                ),
+              ),
         const SizedBox(height: 16),
         _buildFeatureItem(
           icon: Icons.self_improvement_rounded,

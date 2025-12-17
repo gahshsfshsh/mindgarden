@@ -25,6 +25,11 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 
 # Payments
 from payments import YuKassaPayment, StripePayment, SubscriptionManager
+from yookassa_client import (
+    yk_create_payment, yk_create_by_token, yk_get_payment, 
+    yk_check_payment_status, create_subscription_payment, 
+    YooKassaError, SUBSCRIPTION_PRICES
+)
 
 load_dotenv()
 
@@ -1067,6 +1072,228 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 db.commit()
     
     return {"status": "ok"}
+
+
+# ==================== MOBILE PAYMENTS (YooKassa SDK) ====================
+
+class MobilePaymentCreate(BaseModel):
+    plan: str  # monthly, yearly, lifetime
+    return_url: Optional[str] = "mindgarden://payment-success"
+
+class MobilePaymentByToken(BaseModel):
+    payment_token: str
+    amount: str
+    description: str
+    plan: str
+    return_url: Optional[str] = None
+
+class PaymentStatusCheck(BaseModel):
+    payment_id: str
+
+
+@app.post("/api/payments/mobile/create", tags=["Mobile Payments"])
+async def create_mobile_payment(
+    payment: MobilePaymentCreate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Создать платёж для мобильного приложения (redirect).
+    Возвращает confirmation_url для открытия в браузере.
+    """
+    try:
+        result = await create_subscription_payment(
+            user_id=current_user.id,
+            user_email=current_user.email,
+            plan=payment.plan,
+            return_url=payment.return_url or "mindgarden://payment-success"
+        )
+        
+        # Сохраняем платёж
+        db.add(PaymentDB(
+            user_id=current_user.id,
+            provider="yukassa",
+            payment_id=result["payment_id"],
+            amount=float(SUBSCRIPTION_PRICES.get(payment.plan, "449.00")),
+            currency="RUB",
+            status="pending",
+            plan=payment.plan
+        ))
+        db.commit()
+        
+        return {
+            "success": True,
+            "payment_id": result["payment_id"],
+            "confirmation_url": result["confirmation_url"],
+            "status": result["status"]
+        }
+    except YooKassaError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "YOOKASSA_ERROR", "code": e.code, "message": e.message}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/payments/mobile/create-by-token", tags=["Mobile Payments"])
+async def create_payment_by_token(
+    payment: MobilePaymentByToken,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Создать платёж по payment_token (из yookassa_payments_flutter SDK).
+    Используется когда пользователь выбрал способ оплаты в мобильном SDK.
+    """
+    try:
+        result = await yk_create_by_token(
+            amount=payment.amount,
+            description=payment.description,
+            payment_token=payment.payment_token,
+            customer_email=current_user.email,
+            return_url=payment.return_url,
+            metadata={
+                "user_id": str(current_user.id),
+                "plan": payment.plan,
+                "type": "subscription"
+            }
+        )
+        
+        payment_id = result.get("id")
+        status = result.get("status")
+        
+        # Сохраняем платёж
+        db.add(PaymentDB(
+            user_id=current_user.id,
+            provider="yukassa",
+            payment_id=payment_id,
+            amount=float(payment.amount),
+            currency="RUB",
+            status=status,
+            plan=payment.plan
+        ))
+        db.commit()
+        
+        # Если статус succeeded - сразу активируем подписку
+        if status == "succeeded":
+            current_user.is_premium = True
+            current_user.subscription_type = payment.plan
+            current_user.subscription_end = SubscriptionManager.calculate_subscription_end(payment.plan)
+            db.commit()
+        
+        # Возвращаем confirmation_url если нужен 3DS
+        confirmation_url = None
+        if status == "pending":
+            conf = result.get("confirmation") or {}
+            if conf.get("type") == "redirect":
+                confirmation_url = conf.get("confirmation_url")
+        
+        return {
+            "success": True,
+            "payment_id": payment_id,
+            "status": status,
+            "confirmation_url": confirmation_url,
+            "is_premium": status == "succeeded"
+        }
+    except YooKassaError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "YOOKASSA_ERROR", "code": e.code, "message": e.message}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/payments/mobile/status/{payment_id}", tags=["Mobile Payments"])
+async def check_payment_status(
+    payment_id: str,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Проверить статус платежа.
+    Вызывать после возврата из платёжной страницы.
+    """
+    try:
+        # Получаем статус из YooKassa
+        yk_status = await yk_check_payment_status(payment_id)
+        
+        # Обновляем локальный статус
+        local_payment = db.query(PaymentDB).filter(PaymentDB.payment_id == payment_id).first()
+        if local_payment:
+            local_payment.status = yk_status
+            
+            # Если успешно - активируем подписку
+            if yk_status == "succeeded" and not current_user.is_premium:
+                current_user.is_premium = True
+                current_user.subscription_type = local_payment.plan
+                current_user.subscription_end = SubscriptionManager.calculate_subscription_end(local_payment.plan)
+            
+            db.commit()
+        
+        return {
+            "payment_id": payment_id,
+            "status": yk_status,
+            "is_final": yk_status in ["succeeded", "canceled"],
+            "is_premium": current_user.is_premium
+        }
+    except Exception as e:
+        return {
+            "payment_id": payment_id,
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@app.get("/api/payments/plans", tags=["Mobile Payments"])
+async def get_payment_plans():
+    """Получить список доступных планов подписки"""
+    return {
+        "plans": [
+            {
+                "id": "monthly",
+                "name": "Месячная",
+                "price": 449,
+                "currency": "RUB",
+                "period": "month",
+                "description": "Premium доступ на 1 месяц",
+                "features": [
+                    "340+ практик",
+                    "AI-советы без лимитов",
+                    "Офлайн-режим",
+                    "Без рекламы"
+                ]
+            },
+            {
+                "id": "yearly",
+                "name": "Годовая",
+                "price": 2990,
+                "currency": "RUB",
+                "period": "year",
+                "description": "Premium доступ на 1 год (экономия 50%)",
+                "popular": True,
+                "features": [
+                    "Всё из месячной",
+                    "Экономия 2398 ₽",
+                    "Приоритетная поддержка"
+                ]
+            },
+            {
+                "id": "lifetime",
+                "name": "Навсегда",
+                "price": 4990,
+                "currency": "RUB",
+                "period": "lifetime",
+                "description": "Пожизненный доступ",
+                "features": [
+                    "Всё из годовой",
+                    "Пожизненный доступ",
+                    "Все будущие обновления"
+                ]
+            }
+        ]
+    }
 
 
 # ==================== AI RECOMMENDATIONS ====================

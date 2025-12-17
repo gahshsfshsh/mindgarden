@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://localhost:8000';
+  // Backend URL - порт 7000 для MindGarden
+  static const String baseUrl = 'http://158.255.6.22:7000';
   
   static String? _token;
   
@@ -308,5 +308,24 @@ class ApiService {
     } else {
       throw Exception('Failed to create payment');
     }
+  }
+  
+  // ==================== GENERIC HTTP METHODS ====================
+  
+  /// POST request (for PaymentService)
+  Future<http.Response> post(String path, {Map<String, dynamic>? body}) async {
+    return await http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: _headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
+  }
+  
+  /// GET request (for PaymentService)
+  Future<http.Response> get(String path) async {
+    return await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: _headers,
+    );
   }
 }

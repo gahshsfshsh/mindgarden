@@ -457,7 +457,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center">
                 {Icons.leaf}
-              </div>
+            </div>
               <span className="text-xl font-bold text-white font-serif">MindGarden</span>
             </div>
             
@@ -566,10 +566,10 @@ export default function LandingPage() {
               >
                 <div className="bg-gradient-to-br from-emerald-900/50 to-green-900/30 rounded-[2.5rem] p-3 shadow-2xl border border-emerald-500/20">
                   <div className="bg-[#0C1810] rounded-[2rem] overflow-hidden aspect-[9/19]">
-                    <div className="h-full flex flex-col">
-                      {/* Status bar */}
-                      <div className="flex justify-between items-center px-6 py-3 text-xs text-white/60">
-                        <span>9:41</span>
+                  <div className="h-full flex flex-col">
+                    {/* Status bar */}
+                    <div className="flex justify-between items-center px-6 py-3 text-xs text-white/60">
+                      <span>9:41</span>
                         <div className="w-24 h-7 bg-black rounded-full" />
                         <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -577,14 +577,14 @@ export default function LandingPage() {
                           </svg>
                           100%
                         </span>
-                      </div>
+                    </div>
                       
-                      {/* Content */}
+                    {/* Content */}
                       <div className="flex-1 p-5 space-y-4">
-                        <div className="text-left">
+                      <div className="text-left">
                           <p className="text-emerald-400 text-sm font-medium">Добрый вечер 🌙</p>
                           <h2 className="text-xl font-bold text-white font-serif">Как вы себя чувствуете?</h2>
-                        </div>
+                      </div>
                         
                         {/* Mood selector */}
                         <div className="flex justify-between px-2 py-4 glass rounded-2xl">
@@ -600,24 +600,24 @@ export default function LandingPage() {
                         
                         {/* Today's practice */}
                         <div className="bg-gradient-to-br from-emerald-600/30 to-green-700/20 rounded-2xl p-4 border border-emerald-500/20">
-                          <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-3">
                             <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-xl">
-                              🧘
-                            </div>
+                            🧘
+                          </div>
                             <div className="flex-1">
                               <p className="font-medium text-white text-sm">Вечернее расслабление</p>
                               <p className="text-emerald-400/80 text-xs">15 мин • Снятие стресса</p>
-                            </div>
+                          </div>
                             <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center">
                               <svg className="w-5 h-5 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M8 5v14l11-7z" />
                               </svg>
-                            </div>
+                        </div>
                           </div>
                         </div>
                         
                         {/* Quick actions */}
-                        <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3">
                           {[
                             { icon: "💬", label: "AI-чат" },
                             { icon: "📝", label: "Дневник" },
@@ -627,13 +627,13 @@ export default function LandingPage() {
                             <div key={item.label} className="glass rounded-xl p-3 text-center text-sm">
                               <span className="text-lg">{item.icon}</span>
                               <span className="ml-2 text-white/80">{item.label}</span>
-                            </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
               </motion.div>
             </div>
           </motion.div>
@@ -719,7 +719,7 @@ export default function LandingPage() {
           >
             <span className="inline-block px-4 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-full text-sm font-medium mb-4">
               Возможности
-            </span>
+              </span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif">
               Всё для вашего{" "}
               <span className="gradient-text">ментального благополучия</span>
@@ -905,7 +905,7 @@ export default function LandingPage() {
           >
             <span className="inline-block px-4 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-full text-sm font-medium mb-4">
               Отзывы
-            </span>
+              </span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif">
               Истории наших{" "}
               <span className="gradient-text">пользователей</span>
@@ -929,7 +929,7 @@ export default function LandingPage() {
           >
             <span className="inline-block px-4 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-full text-sm font-medium mb-4">
               Тарифы
-            </span>
+              </span>
             <h2 className="text-4xl md:text-5xl font-bold mb-6 font-serif">
               Начните заботиться о себе{" "}
               <span className="gradient-text">уже сегодня</span>
@@ -1094,9 +1094,9 @@ export default function LandingPage() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center">
                   {Icons.leaf}
-                </div>
+            </div>
                 <span className="text-xl font-bold text-white font-serif">MindGarden</span>
-              </div>
+            </div>
               <p className="text-white/50 text-sm">
                 Приложение для заботы о ментальном благополучии. Не является медицинским сервисом.
               </p>

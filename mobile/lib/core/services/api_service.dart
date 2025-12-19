@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 
 class ApiService {
-  // Backend URL - порт 7000 для MindGarden
-  static const String baseUrl = 'http://158.255.6.22:7000';
+  // Backend URL - берётся из конфига
+  static const String baseUrl = AppConfig.apiUrl;
   
   static String? _token;
   

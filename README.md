@@ -47,6 +47,15 @@ YOGA/
 └── README.md
 ```
 
+## 🌐 Серверы
+
+| Окружение | Сервер | Порт | Назначение |
+|-----------|--------|------|------------|
+| **DEV** | 188.68.223.230 | 3000 | Разработка |
+| **STAGING** | 158.255.6.22 | 7000 | Тестирование |
+
+📖 Подробные инструкции: [DEPLOY_DEV.md](DEPLOY_DEV.md) | [TESTFLIGHT_GUIDE.md](TESTFLIGHT_GUIDE.md)
+
 ## 🚀 Быстрый старт
 
 ### Backend
@@ -56,8 +65,8 @@ cd backend
 pip install -r requirements.txt
 cp ENV_TEMPLATE.txt .env
 # Заполните .env
-python seed_content.py  # Наполнить БД
-uvicorn main:app --reload
+python3 seed_content.py  # Наполнить БД
+python3 -m uvicorn main:app --host 0.0.0.0 --port 3000
 ```
 
 ### Landing

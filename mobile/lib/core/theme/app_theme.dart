@@ -28,6 +28,9 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
+  static const Color purple = Color(0xFF8B5CF6);
+  static const Color pink = Color(0xFFEC4899);
+  static const Color orange = Color(0xFFF97316);
   
   // Mood Colors
   static const Color moodGreat = Color(0xFF22C55E);
@@ -57,6 +60,12 @@ class AppColors {
   
   static const LinearGradient accentGradient = LinearGradient(
     colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient gradientPurplePink = LinearGradient(
+    colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

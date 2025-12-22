@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 import '../../../core/models/content_model.dart';
 
 class PlayerProvider with ChangeNotifier {
@@ -34,25 +34,27 @@ class PlayerProvider with ChangeNotifier {
   }
 
   void _setupPlayer() {
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      _isPlaying = state == PlayerState.playing;
+    _audioPlayer.playerStateStream.listen((state) {
+      _isPlaying = state.playing;
       notifyListeners();
     });
 
-    _audioPlayer.onDurationChanged.listen((newDuration) {
-      _duration = newDuration;
+    _audioPlayer.durationStream.listen((newDuration) {
+      _duration = newDuration ?? Duration.zero;
       notifyListeners();
     });
 
-    _audioPlayer.onPositionChanged.listen((newPosition) {
+    _audioPlayer.positionStream.listen((newPosition) {
       _position = newPosition;
       notifyListeners();
     });
 
-    _audioPlayer.onPlayerComplete.listen((_) {
-      _isPlaying = false;
-      _position = Duration.zero;
-      notifyListeners();
+    _audioPlayer.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) {
+        _isPlaying = false;
+        _position = Duration.zero;
+        notifyListeners();
+      }
     });
   }
 
@@ -73,8 +75,8 @@ class PlayerProvider with ChangeNotifier {
       await _audioPlayer.stop();
       
       // Play the new audio
-      await _audioPlayer.setSourceUrl(content.audioUrl!);
-      await _audioPlayer.resume();
+      await _audioPlayer.setUrl(content.audioUrl!);
+      await _audioPlayer.play();
       
       _isLoading = false;
       notifyListeners();
@@ -90,7 +92,7 @@ class PlayerProvider with ChangeNotifier {
   }
 
   Future<void> resume() async {
-    await _audioPlayer.resume();
+    await _audioPlayer.play();
   }
 
   Future<void> stop() async {
@@ -157,5 +159,3 @@ class PlayerProvider with ChangeNotifier {
     super.dispose();
   }
 }
-
-

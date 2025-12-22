@@ -1,0 +1,10 @@
+# Скопируйте и выполните эту команду на сервере root@leha-tema:
+
+GITHUB_TOKEN="YOUR_GITHUB_TOKEN_HERE"; REPO_DIR="$HOME/mindgarden"; BACKEND_DIR="$REPO_DIR/backend"; PORT=3000; PID=$(lsof -ti:$PORT 2>/dev/null); [ ! -z "$PID" ] && kill -9 $PID 2>/dev/null && sleep 2; pkill -f "uvicorn.*$PORT" 2>/dev/null || true; sleep 1; if [ -d "$REPO_DIR" ]; then cd "$REPO_DIR" && git pull https://${GITHUB_TOKEN}@github.com/gahshsfshsh/mindgarden.git 2>/dev/null || git pull origin main 2>/dev/null || true; else cd "$HOME" && git clone https://${GITHUB_TOKEN}@github.com/gahshsfshsh/mindgarden.git; fi; cd "$BACKEND_DIR" || exit 1; [ ! -d "venv" ] && python3 -m venv venv; source venv/bin/activate; pip install -q -r requirements.txt; [ ! -f ".env" ] && cat > .env << 'ENVEOF'
+DATABASE_URL=sqlite:///./mindgarden.db
+JWT_SECRET=mindgarden-dev-secret-key-2024
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+ENVEOF
+[ -f "seed_content.py" ] && python3 seed_content.py 2>/dev/null || true; nohup python3 -m uvicorn main:app --host 0.0.0.0 --port $PORT > server.log 2>&1 & sleep 4; echo "✅ Сервер запущен на порту $PORT"; echo "📋 PID: $(lsof -ti:$PORT)"; echo "📝 Логи: tail -f $BACKEND_DIR/server.log"; curl -s http://localhost:$PORT/health || echo "⚠️  Проверьте логи"
+
+

@@ -14,6 +14,14 @@ class ApiService {
     _token = prefs.getString('auth_token');
   }
   
+  /// Получить токен авторизации
+  static Future<String?> getToken() async {
+    if (_token != null) return _token;
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('auth_token');
+    return _token;
+  }
+  
   static Future<void> setToken(String token) async {
     _token = token;
     final prefs = await SharedPreferences.getInstance();
@@ -183,6 +191,24 @@ class ApiService {
       Uri.parse('$baseUrl/api/content/$contentId/play'),
       headers: _headers,
     );
+  }
+  
+  /// Получить категории для типа контента
+  static Future<List<String>> getCategories(String type) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/content/categories?type=$type'),
+        headers: _headers,
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<String>.from(data['categories'] ?? []);
+      }
+    } catch (e) {
+      // Categories are optional, return empty list on error
+    }
+    return [];
   }
   
   // ==================== PROGRESS ====================

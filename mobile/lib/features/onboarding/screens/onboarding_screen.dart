@@ -73,8 +73,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
+          child: Column(
+            children: [
             // Skip button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -96,15 +96,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             
             // Page content
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
                 onPageChanged: (index) {
                   setState(() {
                     _currentPage = index;
                   });
                 },
-                itemCount: _pages.length,
+                  itemCount: _pages.length,
                 itemBuilder: (context, index) {
                   return _buildPage(_pages[index]);
                 },
@@ -117,30 +117,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 children: [
                   // Page indicators
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(_pages.length, (index) {
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
                         width: _currentPage == index ? 24 : 8,
                         height: 8,
-                        decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                           color: _currentPage == index
                               ? _pages[_currentPage].color
                               : AppColors.surface,
-                          borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(4),
                         ),
                       );
                     }),
-                  ),
-                  const SizedBox(height: 32),
+              ),
+              const SizedBox(height: 32),
                   
                   // Next button
                   GestureDetector(
                     onTap: _nextPage,
                     child: Container(
-                      width: double.infinity,
+                  width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

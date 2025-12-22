@@ -203,3 +203,5 @@ flutter build ios --release
 - [ ] Иконка приложения добавлена
 - [ ] Launch screen настроен
 
+
+

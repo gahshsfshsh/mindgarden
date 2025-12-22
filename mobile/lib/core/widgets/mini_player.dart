@@ -1,157 +1,160 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_theme.dart';
 import '../../features/player/providers/player_provider.dart';
 
+// Create a Riverpod provider for PlayerProvider
+final playerProvider = ChangeNotifierProvider<PlayerProvider>((ref) {
+  return PlayerProvider();
+});
+
 /// Mini player widget that appears when audio is playing
 /// Shows at the bottom of the screen, above the bottom navigation
-class MiniPlayer extends StatelessWidget {
+class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<PlayerProvider>(
-      builder: (context, player, _) {
-        final content = player.currentContent;
-        if (content == null) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final player = ref.watch(playerProvider);
+    final content = player.currentContent;
+    
+    if (content == null) return const SizedBox.shrink();
 
-        return GestureDetector(
-          onTap: () => context.push('/player/${content.id}'),
-          onVerticalDragEnd: (details) {
-            if (details.primaryVelocity != null && details.primaryVelocity! < -300) {
-              context.push('/player/${content.id}');
-            }
-          },
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.surface,
-                  AppColors.surface.withOpacity(0.95),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.purple.withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              border: Border.all(color: AppColors.surfaceLight),
+    return GestureDetector(
+      onTap: () => context.push('/player/${content.id}'),
+      onVerticalDragEnd: (details) {
+        if (details.primaryVelocity != null && details.primaryVelocity! < -300) {
+          context.push('/player/${content.id}');
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.surface,
+              AppColors.surface.withOpacity(0.95),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.purple.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 5),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Progress bar
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: LinearProgressIndicator(
-                    value: player.duration.inSeconds > 0
-                        ? player.position.inSeconds / player.duration.inSeconds
-                        : 0,
-                    backgroundColor: AppColors.surfaceLight,
-                    valueColor: const AlwaysStoppedAnimation(AppColors.purple),
-                    minHeight: 3,
+          ],
+          border: Border.all(color: AppColors.surfaceLight),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Progress bar
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: LinearProgressIndicator(
+                value: player.duration.inSeconds > 0
+                    ? player.position.inSeconds / player.duration.inSeconds
+                    : 0,
+                backgroundColor: AppColors.surfaceLight,
+                valueColor: const AlwaysStoppedAnimation(AppColors.purple),
+                minHeight: 3,
+              ),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  // Thumbnail
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      gradient: AppColors.gradientPurplePink,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: content.thumbnailUrl != null
+                          ? Image.network(
+                              content.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.music_note,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.music_note,
+                              color: Colors.white,
+                            ),
+                    ),
                   ),
-                ),
-                
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
+                  
+                  const SizedBox(width: 12),
+                  
+                  // Title & Category
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          content.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          content.category ?? content.typeDisplay,
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Controls
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Thumbnail
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          gradient: AppColors.gradientPurplePink,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: content.thumbnailUrl != null
-                              ? Image.network(
-                                  content.thumbnailUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.music_note,
-                                  color: Colors.white,
-                                ),
-                        ),
+                      // Play/Pause
+                      _MiniPlayerButton(
+                        icon: player.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        onTap: () {
+                          if (player.isPlaying) {
+                            player.pause();
+                          } else {
+                            player.resume();
+                          }
+                        },
+                        isPrimary: true,
                       ),
                       
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       
-                      // Title & Category
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              content.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              content.category ?? content.typeDisplay,
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      // Controls
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Play/Pause
-                          _MiniPlayerButton(
-                            icon: player.isPlaying
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            onTap: () {
-                              if (player.isPlaying) {
-                                player.pause();
-                              } else {
-                                player.resume();
-                              }
-                            },
-                            isPrimary: true,
-                          ),
-                          
-                          const SizedBox(width: 8),
-                          
-                          // Close
-                          _MiniPlayerButton(
-                            icon: Icons.close_rounded,
-                            onTap: () => player.stop(),
-                          ),
-                        ],
+                      // Close
+                      _MiniPlayerButton(
+                        icon: Icons.close_rounded,
+                        onTap: () => player.stop(),
                       ),
                     ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
@@ -188,5 +191,3 @@ class _MiniPlayerButton extends StatelessWidget {
     );
   }
 }
-
-

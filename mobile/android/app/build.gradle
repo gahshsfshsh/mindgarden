@@ -6,10 +6,12 @@ plugins {
 
 android {
     namespace = "com.mindgarden.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Enable core library desugaring
+        coreLibraryDesugaringEnabled true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -20,10 +22,13 @@ android {
 
     defaultConfig {
         applicationId = "com.mindgarden.app"
-        minSdk = 21
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Required for flutter_local_notifications
+        multiDexEnabled true
         
         // YooKassa SDK scheme для deep links
         resValue "string", "ym_app_scheme", "mindgarden"
@@ -43,9 +48,8 @@ flutter {
 }
 
 dependencies {
+    // Core library desugaring for Java 8+ APIs on older Android versions
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    
     // YooKassa SDK зависимости автоматически подтягиваются через Flutter plugin
 }
-
-
-
-

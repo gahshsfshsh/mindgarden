@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.mindgarden.app"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -52,4 +52,14 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     
     // YooKassa SDK зависимости автоматически подтягиваются через Flutter plugin
+}
+
+// Force compatible versions of AndroidX dependencies
+// (Required because some Flutter plugins pull in versions that need compileSdk 36)
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.browser:browser:1.8.0'
+        force 'androidx.core:core:1.15.0'
+        force 'androidx.core:core-ktx:1.15.0'
+    }
 }
